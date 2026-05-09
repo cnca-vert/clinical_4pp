@@ -70,6 +70,28 @@ export async function proxy(request: NextRequest) {
       url.pathname = "/student";
       return NextResponse.redirect(url);
     }
+
+    // Enforce CI credential expiry — check DB only on CI routes
+    if (role === "ci" && isCiRoute) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("ci_credentials_expire_at, is_active")
+        .eq("id", user.id)
+        .single();
+
+      const expired =
+        profile?.ci_credentials_expire_at &&
+        new Date(profile.ci_credentials_expire_at) < new Date();
+
+      if (expired || profile?.is_active === false) {
+        // Sign out and send to login with an error message
+        await supabase.auth.signOut();
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        url.searchParams.set("error", expired ? "credentials_expired" : "account_inactive");
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return response;
