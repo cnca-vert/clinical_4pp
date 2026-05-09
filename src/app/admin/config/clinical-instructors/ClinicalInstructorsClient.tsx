@@ -260,25 +260,6 @@ export default function ClinicalInstructorsClient({ items }: { items: ClinicalIn
 }
 
 
-export type ClinicalInstructor = {
-  id: string;
-  full_name: string;
-  email: string;
-  is_active: boolean;
-};
-
-type ActionState = { error?: string | null; success?: boolean; link?: string };
-const init: ActionState = {};
-
-function CreateForm() {
-  const [state, action, pending] = useActionState(
-    async (_prev: ActionState, formData: FormData): Promise<ActionState> => {
-      const result = await createClinicalInstructor(formData);
-      return result ?? {};
-    },
-    init,
-  );
-
   return (
     <form
       action={action}
