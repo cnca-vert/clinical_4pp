@@ -198,7 +198,7 @@ export default function AdminSidebar() {
               <ClipboardList className="h-4 w-4 text-black" />
             </div>
             <span className="text-sm font-semibold text-foreground">
-              Clinical Cases
+              NurseSync
             </span>
           </div>
           <button

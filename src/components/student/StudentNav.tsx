@@ -30,7 +30,7 @@ export default function StudentNav({ displayName }: { displayName: string }) {
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         {/* Brand + desktop nav */}
         <div className="flex items-center gap-4 md:gap-6">
-          <span className="text-sm font-semibold text-foreground">Clinical Cases</span>
+          <span className="text-sm font-semibold text-foreground">NurseSync</span>
           <nav className="hidden md:flex items-center gap-1">
             {NAV.map(({ href, label, icon: Icon }) => (
               <Link

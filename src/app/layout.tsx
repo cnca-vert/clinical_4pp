@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clinical Case Manager",
+  title: "NurseSync",
   description: "Clinical case management system for nursing instructors and students",
 };
 

@@ -110,7 +110,7 @@ export default function CINav({
         <ClipboardList className="h-4 w-4 text-black" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground">Clinical Cases</p>
+        <p className="text-sm font-semibold text-foreground">NurseSync</p>
         <p className="text-xs text-white/40 capitalize">{role} view</p>
       </div>
     </div>
@@ -144,7 +144,7 @@ export default function CINav({
               <ClipboardList className="h-4 w-4 text-black" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Clinical Cases</p>
+              <p className="text-sm font-semibold text-foreground">NurseSync</p>
               <p className="text-xs text-white/40 capitalize">{role} view</p>
             </div>
           </div>
