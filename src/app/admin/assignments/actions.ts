@@ -11,7 +11,8 @@ export type ConflictWarning = {
 };
 
 export async function createAssignment(formData: FormData) {
-  const studentId = formData.get("student_id") as string;
+  const studentId = (formData.get("student_id") as string) || null;
+  const rosterId = (formData.get("roster_id") as string) || null;
   const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
@@ -22,7 +23,11 @@ export async function createAssignment(formData: FormData) {
   const inclusiveDaysRaw = (formData.get("inclusive_days") as string) || "[]";
   const inclusiveDays = JSON.parse(inclusiveDaysRaw) as number[];
 
-  if (!studentId || !areaOfDutyId || !scheduledDate) {
+  if (!studentId && !rosterId) {
+    return { error: "No student or roster entry selected." };
+  }
+
+  if (!areaOfDutyId || !scheduledDate) {
     return { error: "All fields are required." };
   }
 
@@ -40,7 +45,8 @@ export async function createAssignment(formData: FormData) {
   const { data: assignment, error } = await supabase
     .from("assignments")
     .insert({
-      student_id: studentId,
+      ...(studentId ? { student_id: studentId } : {}),
+      ...(rosterId ? { roster_id: rosterId } : {}),
       area_of_duty_id: areaOfDutyId,
       shift_id: shiftId,
       rotation_id: rotationId,
@@ -62,28 +68,31 @@ export async function createAssignment(formData: FormData) {
     performed_by: user.id,
     target_table: "assignments",
     target_id: assignment.id,
-    details: { student_id: studentId, scheduled_date: scheduledDate, end_date: endDate, shift_id: shiftId, rotation_id: rotationId },
+    details: { student_id: studentId, roster_id: rosterId, scheduled_date: scheduledDate, end_date: endDate, shift_id: shiftId, rotation_id: rotationId },
   });
 
-  // Send email notification (non-blocking)
-  const [{ data: loc }, { data: shiftRow }] = await Promise.all([
-    supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
-    shiftId ? supabase.from("shifts").select("name").eq("id", shiftId).single() : Promise.resolve({ data: null }),
-  ]);
-  sendAssignmentEmail(studentId, {
-    locationName: loc?.name ?? "Unknown",
-    shiftName: shiftRow?.name ?? null,
-    scheduledDate,
-    endDate,
-    notes,
-  }).catch(() => {});
+  // Send email notification (non-blocking, only when we have a real student)
+  if (studentId) {
+    const [{ data: loc }, { data: shiftRow }] = await Promise.all([
+      supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
+      shiftId ? supabase.from("shifts").select("name").eq("id", shiftId).single() : Promise.resolve({ data: null }),
+    ]);
+    sendAssignmentEmail(studentId, {
+      locationName: loc?.name ?? "Unknown",
+      shiftName: shiftRow?.name ?? null,
+      scheduledDate,
+      endDate,
+      notes,
+    }).catch(() => {});
+  }
 
   revalidatePath("/admin/assignments");
   return { success: true };
 }
 
 export async function bulkAssign(formData: FormData) {
-  const studentIds = formData.get("student_ids") as string;
+  const studentIdsRaw = (formData.get("student_ids") as string) || "[]";
+  const rosterIdsRaw = (formData.get("roster_ids") as string) || "[]";
   const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const scheduledDate = formData.get("scheduled_date") as string;
   const endDate = (formData.get("end_date") as string) || null;
@@ -94,7 +103,7 @@ export async function bulkAssign(formData: FormData) {
   const inclusiveDaysRaw = (formData.get("inclusive_days") as string) || "[]";
   const inclusiveDays = JSON.parse(inclusiveDaysRaw) as number[];
 
-  if (!studentIds || !areaOfDutyId || !scheduledDate) {
+  if (!areaOfDutyId || !scheduledDate) {
     return { error: "All fields are required." };
   }
 
@@ -102,8 +111,9 @@ export async function bulkAssign(formData: FormData) {
     return { error: "End date cannot be before start date." };
   }
 
-  const ids = JSON.parse(studentIds) as string[];
-  if (ids.length === 0) return { error: "No students selected." };
+  const studentIds = JSON.parse(studentIdsRaw) as string[];
+  const rosterIds = JSON.parse(rosterIdsRaw) as string[];
+  if (studentIds.length === 0 && rosterIds.length === 0) return { error: "No students selected." };
 
   const supabase = await createClient();
   const {
@@ -111,19 +121,34 @@ export async function bulkAssign(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized." };
 
-  const rows = ids.map((sid) => ({
-    student_id: sid,
-    area_of_duty_id: areaOfDutyId,
-    shift_id: shiftId,
-    rotation_id: rotationId,
-    clinical_instructor_id: clinicalInstructorId,
-    scheduled_date: scheduledDate,
-    end_date: endDate,
-    inclusive_days: inclusiveDays,
-    assigned_by: user.id,
-    status: "scheduled" as const,
-    notes,
-  }));
+  const rows = [
+    ...studentIds.map((sid) => ({
+      student_id: sid,
+      area_of_duty_id: areaOfDutyId,
+      shift_id: shiftId,
+      rotation_id: rotationId,
+      clinical_instructor_id: clinicalInstructorId,
+      scheduled_date: scheduledDate,
+      end_date: endDate,
+      inclusive_days: inclusiveDays,
+      assigned_by: user.id,
+      status: "scheduled" as const,
+      notes,
+    })),
+    ...rosterIds.map((rid) => ({
+      roster_id: rid,
+      area_of_duty_id: areaOfDutyId,
+      shift_id: shiftId,
+      rotation_id: rotationId,
+      clinical_instructor_id: clinicalInstructorId,
+      scheduled_date: scheduledDate,
+      end_date: endDate,
+      inclusive_days: inclusiveDays,
+      assigned_by: user.id,
+      status: "scheduled" as const,
+      notes,
+    })),
+  ];
 
   const { data: inserted, error } = await supabase
     .from("assignments")
@@ -145,23 +170,25 @@ export async function bulkAssign(formData: FormData) {
     );
   }
 
-  // Send email notifications (non-blocking)
-  const [{ data: loc }, { data: shiftRow }] = await Promise.all([
-    supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
-    shiftId ? supabase.from("shifts").select("name").eq("id", shiftId).single() : Promise.resolve({ data: null }),
-  ]);
-  for (const sid of ids) {
-    sendAssignmentEmail(sid, {
-      locationName: loc?.name ?? "Unknown",
-      shiftName: shiftRow?.name ?? null,
-      scheduledDate,
-      endDate,
-      notes,
-    }).catch(() => {});
+  // Send email notifications (non-blocking, only for real student profiles)
+  if (studentIds.length > 0) {
+    const [{ data: loc }, { data: shiftRow }] = await Promise.all([
+      supabase.from("areas_of_duty").select("name").eq("id", areaOfDutyId).single(),
+      shiftId ? supabase.from("shifts").select("name").eq("id", shiftId).single() : Promise.resolve({ data: null }),
+    ]);
+    for (const sid of studentIds) {
+      sendAssignmentEmail(sid, {
+        locationName: loc?.name ?? "Unknown",
+        shiftName: shiftRow?.name ?? null,
+        scheduledDate,
+        endDate,
+        notes,
+      }).catch(() => {});
+    }
   }
 
   revalidatePath("/admin/assignments");
-  return { success: true, count: ids.length };
+  return { success: true, count: studentIds.length + rosterIds.length };
 }
 
 export async function checkConflicts(

@@ -25,13 +25,25 @@ export default async function StudentAssignmentsPage() {
 
   if (!user) redirect("/login");
 
-  const { data } = await supabase
+  // Fetch the student's roster_id so we can include pre-assigned rotations
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("roster_id")
+    .eq("id", user.id)
+    .single();
+
+  const rosterId = profile?.roster_id ?? null;
+
+  const baseQuery = supabase
     .from("assignments")
     .select(
       "id, area_of_duty_id, shift_id, rotation_id, scheduled_date, end_date, status, notes, cancellation_reason, areas_of_duty(name), shifts(name), rotations(name, inclusive_days)"
     )
-    .eq("student_id", user.id)
     .order("scheduled_date", { ascending: false });
+
+  const { data } = await (rosterId
+    ? baseQuery.or(`student_id.eq.${user.id},roster_id.eq.${rosterId}`)
+    : baseQuery.eq("student_id", user.id));
 
   const assignments: Assignment[] = (data ?? []) as unknown as Assignment[];
 

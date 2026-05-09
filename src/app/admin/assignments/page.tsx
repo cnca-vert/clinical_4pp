@@ -15,7 +15,7 @@ const STATUS_STYLE: Record<string, string> = {
 export default async function AssignmentsPage() {
   const supabase = await createClient();
 
-  const [{ data: areasOfDuty }, { data: shifts }, { data: rotations }, { data: students }, { data: clinicalInstructors }] =
+  const [{ data: areasOfDuty }, { data: shifts }, { data: rotations }, { data: students }, { data: clinicalInstructors }, { data: allRoster }, { data: claimedRosterRows }] =
     await Promise.all([
       supabase.from("areas_of_duty").select("id, name").eq("is_active", true).order("name"),
       supabase.from("shifts").select("id, name").eq("is_active", true).order("name"),
@@ -32,7 +32,13 @@ export default async function AssignmentsPage() {
         .eq("role", "ci")
         .eq("is_active", true)
         .order("full_name"),
+      supabase.from("student_roster").select("id, full_name, section").order("full_name"),
+      supabase.from("profiles").select("roster_id").not("roster_id", "is", null),
     ]);
+
+  // Roster entries not yet claimed by a signed-up student
+  const claimedIds = new Set((claimedRosterRows ?? []).map((p) => p.roster_id as string));
+  const unclaimedRoster = (allRoster ?? []).filter((r) => !claimedIds.has(r.id));
 
   // Build enriched student list (location-first: no case type)
   let recommended: {
@@ -129,6 +135,7 @@ export default async function AssignmentsPage() {
           recommended={recommended}
           quickStats={quickStats}
           clinicalInstructors={clinicalInstructors ?? []}
+          unclaimedRoster={unclaimedRoster}
           semesterWindow={
             activeSemester
               ? {

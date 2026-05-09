@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { Assignment } from "./page";
-import CancelRequestForm from "./CancelRequestForm";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -121,7 +120,7 @@ function AssignmentCard({
         >
           {a.status === "cancel_requested" ? "Pending Cancel" : a.status}
         </span>
-        {a.status === "scheduled" && <CancelRequestForm assignmentId={a.id} />}
+
       </div>
     </div>
   );

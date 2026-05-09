@@ -9,6 +9,7 @@ type AreaOfDuty = { id: string; name: string };
 type Shift = { id: string; name: string };
 type Rotation = { id: string; name: string; inclusive_days: number[] | null };
 type ClinicalInstructor = { id: string; full_name: string };
+type RosterEntry = { id: string; full_name: string; section: string | null };
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -31,6 +32,7 @@ interface Props {
   quickStats: { noAssignments: number; completedPct: number; totalStudents: number };
   semesterWindow: { name: string; start: string; end: string | null } | null;
   clinicalInstructors: ClinicalInstructor[];
+  unclaimedRoster: RosterEntry[];
 }
 
 type ActionState = { error: string | null; success: boolean; message?: string };
@@ -44,7 +46,7 @@ const PRIORITY_LABEL = {
 
 type SortKey = "priority" | "total_cases" | "total_assignments" | "last_assigned" | "area_duty_count";
 
-export default function AssignForm({ areasOfDuty, shifts, rotations, recommended, quickStats, semesterWindow, clinicalInstructors }: Props) {
+export default function AssignForm({ areasOfDuty, shifts, rotations, recommended, quickStats, semesterWindow, clinicalInstructors, unclaimedRoster }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
@@ -56,6 +58,9 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
   const [endDate, setEndDate] = useState("");
 
   const [, startTransition] = useTransition();
+
+  // Set of roster entry IDs for fast type lookup
+  const rosterIdSet = useMemo(() => new Set(unclaimedRoster.map((r) => r.id)), [unclaimedRoster]);
 
   const toggleInclusiveDay = useCallback((day: number) => {
     setInclusiveDays((prev) => {
@@ -155,19 +160,35 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
 
   const handleCheckConflicts = useCallback(
     (date: string, areaOfDutyId: string) => {
-      if (!date || !areaOfDutyId || selected.size === 0) {
+      const studentOnlyIds = Array.from(selected).filter((id) => !rosterIdSet.has(id));
+      if (!date || !areaOfDutyId || studentOnlyIds.length === 0) {
         setWarnings([]);
         return;
       }
       startTransition(async () => {
-        const w = await checkConflicts(Array.from(selected), date, areaOfDutyId);
+        const w = await checkConflicts(studentOnlyIds, date, areaOfDutyId);
         setWarnings(w);
       });
     },
-    [selected, startTransition],
+    [selected, startTransition, rosterIdSet],
   );
 
   const isBulk = selected.size > 1;
+
+  // Split selection by type for form submission
+  const selectedStudentIds = useMemo(() => Array.from(selected).filter((id) => !rosterIdSet.has(id)), [selected, rosterIdSet]);
+  const selectedRosterIds = useMemo(() => Array.from(selected).filter((id) => rosterIdSet.has(id)), [selected, rosterIdSet]);
+  const singleId = Array.from(selected)[0] ?? "";
+  const singleIsRoster = rosterIdSet.has(singleId);
+
+  // Roster entries filtered by search
+  const filteredRoster = useMemo(() => {
+    if (!search.trim()) return unclaimedRoster;
+    const q = search.toLowerCase();
+    return unclaimedRoster.filter(
+      (r) => r.full_name.toLowerCase().includes(q) || (r.section && r.section.toLowerCase().includes(q)),
+    );
+  }, [unclaimedRoster, search]);
 
   return (
     <div className="space-y-6">
@@ -194,9 +215,14 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
         </h2>
         <form action={isBulk ? bulkAction : singleAction} className="space-y-4">
           {isBulk ? (
-            <input type="hidden" name="student_ids" value={JSON.stringify(Array.from(selected))} />
+            <>
+              <input type="hidden" name="student_ids" value={JSON.stringify(selectedStudentIds)} />
+              <input type="hidden" name="roster_ids" value={JSON.stringify(selectedRosterIds)} />
+            </>
+          ) : singleIsRoster ? (
+            <input type="hidden" name="roster_id" value={singleId} />
           ) : (
-            <input type="hidden" name="student_id" value={Array.from(selected)[0] ?? ""} />
+            <input type="hidden" name="student_id" value={singleId} />
           )}
           <input type="hidden" name="inclusive_days" value={JSON.stringify([...inclusiveDays].sort((a, b) => a - b))} />
 
@@ -446,7 +472,7 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
         </div>
 
         {/* Student list */}
-        {filteredStudents.length === 0 ? (
+        {filteredStudents.length === 0 && filteredRoster.length === 0 ? (
           <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-10">
             <p className="text-xs text-(--text-muted)">No students found</p>
           </div>
@@ -493,6 +519,52 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
                 </li>
               );
             })}
+
+            {/* Pre-registered (no account yet) */}
+            {filteredRoster.length > 0 && (
+              <>
+                <li className="pt-2 pb-1 px-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
+                    Pre-registered — no account yet ({filteredRoster.length})
+                  </p>
+                </li>
+                {filteredRoster.map((r) => {
+                  const isSelected = selected.has(r.id);
+                  return (
+                    <li
+                      key={r.id}
+                      onClick={() => toggleStudent(r.id)}
+                      className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                        isSelected
+                          ? "border-accent bg-accent/10"
+                          : "border-border bg-surface hover:bg-elevated"
+                      }`}
+                    >
+                      <div
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                          isSelected ? "border-accent bg-accent" : "border-border"
+                        }`}
+                      >
+                        {isSelected && (
+                          <svg className="h-3 w-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">{r.full_name}</p>
+                        <p className="text-xs text-(--text-muted)">{r.section ?? "No section"}</p>
+                      </div>
+
+                      <span className="shrink-0 rounded-full bg-purple-500/10 px-2.5 py-1 text-xs font-medium text-purple-400">
+                        Sign-up pending
+                      </span>
+                    </li>
+                  );
+                })}
+              </>
+            )}
           </ul>
         )}
       </div>
