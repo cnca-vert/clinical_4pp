@@ -72,12 +72,11 @@ export default async function FeedPage() {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-3">
-            Welcome back,{" "}
-            <span className="text-accent">{displayName.split(" ")[0]}</span>
+            Clinicals, simplified.
           </h1>
           <p className="text-sm md:text-base text-(--text-secondary) max-w-lg">
-            Stay up to date with the latest from your clinical instructors. Announcements,
-            updates, and reminders — all in one place.
+            Stay on top of your area assignments, shift schedules, case logs and clinical
+            advisories — synced in one central hub.
           </p>
 
           {/* Stats row */}
