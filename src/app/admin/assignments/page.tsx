@@ -15,15 +15,21 @@ const STATUS_STYLE: Record<string, string> = {
 export default async function AssignmentsPage() {
   const supabase = await createClient();
 
-  const [{ data: areasOfDuty }, { data: shifts }, { data: rotations }, { data: students }] =
+  const [{ data: areasOfDuty }, { data: shifts }, { data: rotations }, { data: students }, { data: clinicalInstructors }] =
     await Promise.all([
       supabase.from("areas_of_duty").select("id, name").eq("is_active", true).order("name"),
       supabase.from("shifts").select("id, name").eq("is_active", true).order("name"),
-      supabase.from("rotations").select("id, name, start_date, end_date, inclusive_days").order("start_date", { ascending: false }),
+      supabase.from("rotations").select("id, name, inclusive_days").order("name"),
       supabase
         .from("profiles")
         .select("id, full_name, section")
         .eq("role", "student")
+        .eq("is_active", true)
+        .order("full_name"),
+      supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("role", "ci")
         .eq("is_active", true)
         .order("full_name"),
     ]);
@@ -122,6 +128,7 @@ export default async function AssignmentsPage() {
           rotations={rotations ?? []}
           recommended={recommended}
           quickStats={quickStats}
+          clinicalInstructors={clinicalInstructors ?? []}
           semesterWindow={
             activeSemester
               ? {

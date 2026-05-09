@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   ClipboardList,
   CalendarPlus,
-  CalendarDays,
   Users,
   GraduationCap,
   Settings,
@@ -19,7 +18,6 @@ import {
   X,
   Rss,
   ClipboardCheck,
-  Repeat,
   BookOpen,
 } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
@@ -31,7 +29,6 @@ const NAV = [
   { href: "/admin/assignments", label: "Assignments", icon: CalendarPlus },
   { href: "/admin/students", label: "Students", icon: GraduationCap },
   { href: "/admin/roster", label: "Enrollment", icon: Users },
-  { href: "/admin/rotations", label: "Rotations", icon: Repeat },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   {
     href: "/admin/config",
@@ -41,6 +38,8 @@ const NAV = [
       { href: "/admin/config/case-types", label: "Case Types" },
       { href: "/admin/config/areas-of-duty", label: "Areas of Duty" },
       { href: "/admin/config/shifts", label: "Shifts" },
+      { href: "/admin/config/rotations", label: "Rotations" },
+      { href: "/admin/config/clinical-instructors", label: "Clinical Instructors" },
       { href: "/admin/config/requirements", label: "Requirements" },
       { href: "/admin/config/storage", label: "Storage" },
     ],

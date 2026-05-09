@@ -7,7 +7,8 @@ import SubmitButton from "@/components/ui/SubmitButton";
 
 type AreaOfDuty = { id: string; name: string };
 type Shift = { id: string; name: string };
-type Rotation = { id: string; name: string; start_date: string; end_date: string; inclusive_days: number[] | null };
+type Rotation = { id: string; name: string; inclusive_days: number[] | null };
+type ClinicalInstructor = { id: string; full_name: string };
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -29,6 +30,7 @@ interface Props {
   recommended: RecommendedStudent[];
   quickStats: { noAssignments: number; completedPct: number; totalStudents: number };
   semesterWindow: { name: string; start: string; end: string | null } | null;
+  clinicalInstructors: ClinicalInstructor[];
 }
 
 type ActionState = { error: string | null; success: boolean; message?: string };
@@ -42,7 +44,7 @@ const PRIORITY_LABEL = {
 
 type SortKey = "priority" | "total_cases" | "total_assignments" | "last_assigned" | "area_duty_count";
 
-export default function AssignForm({ areasOfDuty, shifts, rotations, recommended, quickStats, semesterWindow }: Props) {
+export default function AssignForm({ areasOfDuty, shifts, rotations, recommended, quickStats, semesterWindow, clinicalInstructors }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
@@ -53,7 +55,6 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const selectedRotation = rotations.find((r) => r.id === selectedRotationId) ?? null;
   const [, startTransition] = useTransition();
 
   const toggleInclusiveDay = useCallback((day: number) => {
@@ -201,6 +202,27 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+              Rotation
+            </label>
+            <select
+              name="rotation_id"
+              value={selectedRotationId}
+              onChange={(e) => {
+                setSelectedRotationId(e.target.value);
+                setStartDate("");
+                setEndDate("");
+              }}
+              className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              <option value="">No rotation</option>
+              {rotations.map((r) => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
               Area of Duty <span className="text-(--status-rejected)">*</span>
             </label>
             <select
@@ -228,8 +250,8 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
                 type="date"
                 name="scheduled_date"
                 required
-                min={selectedRotation?.start_date ?? semesterWindow?.start ?? undefined}
-                max={endDate || selectedRotation?.end_date || semesterWindow?.end || undefined}
+                min={semesterWindow?.start ?? undefined}
+                max={endDate || semesterWindow?.end || undefined}
                 value={startDate}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -266,8 +288,8 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
                 type="date"
                 name="end_date"
                 required
-                min={startDate || selectedRotation?.start_date || semesterWindow?.start || undefined}
-                max={selectedRotation?.end_date ?? semesterWindow?.end ?? undefined}
+              min={startDate || semesterWindow?.start || undefined}
+              max={semesterWindow?.end ?? undefined}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
@@ -292,26 +314,15 @@ export default function AssignForm({ areasOfDuty, shifts, rotations, recommended
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
-              Rotation
+              Clinical Instructor
             </label>
             <select
-              name="rotation_id"
-              value={selectedRotationId}
-              onChange={(e) => {
-                setSelectedRotationId(e.target.value);
-                setStartDate("");
-                setEndDate("");
-                // Clear date so admin picks one within the new rotation's range
-                const dateInput = document.querySelector<HTMLInputElement>("input[name=scheduled_date]");
-                if (dateInput) dateInput.value = "";
-              }}
+              name="clinical_instructor_id"
               className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             >
-              <option value="">No rotation</option>
-              {rotations.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} ({r.start_date} – {r.end_date})
-                </option>
+              <option value="">No CI assigned</option>
+              {clinicalInstructors.map((ci) => (
+                <option key={ci.id} value={ci.id}>{ci.full_name}</option>
               ))}
             </select>
           </div>

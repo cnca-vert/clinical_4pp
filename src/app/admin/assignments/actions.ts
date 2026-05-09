@@ -17,6 +17,7 @@ export async function createAssignment(formData: FormData) {
   const endDate = (formData.get("end_date") as string) || null;
   const shiftId = (formData.get("shift_id") as string) || null;
   const rotationId = (formData.get("rotation_id") as string) || null;
+  const clinicalInstructorId = (formData.get("clinical_instructor_id") as string) || null;
   const notes = (formData.get("notes") as string) || null;
   const inclusiveDaysRaw = (formData.get("inclusive_days") as string) || "[]";
   const inclusiveDays = JSON.parse(inclusiveDaysRaw) as number[];
@@ -43,6 +44,7 @@ export async function createAssignment(formData: FormData) {
       area_of_duty_id: areaOfDutyId,
       shift_id: shiftId,
       rotation_id: rotationId,
+      clinical_instructor_id: clinicalInstructorId,
       scheduled_date: scheduledDate,
       end_date: endDate,
       inclusive_days: inclusiveDays,
@@ -87,6 +89,7 @@ export async function bulkAssign(formData: FormData) {
   const endDate = (formData.get("end_date") as string) || null;
   const shiftId = (formData.get("shift_id") as string) || null;
   const rotationId = (formData.get("rotation_id") as string) || null;
+  const clinicalInstructorId = (formData.get("clinical_instructor_id") as string) || null;
   const notes = (formData.get("notes") as string) || null;
   const inclusiveDaysRaw = (formData.get("inclusive_days") as string) || "[]";
   const inclusiveDays = JSON.parse(inclusiveDaysRaw) as number[];
@@ -113,6 +116,7 @@ export async function bulkAssign(formData: FormData) {
     area_of_duty_id: areaOfDutyId,
     shift_id: shiftId,
     rotation_id: rotationId,
+    clinical_instructor_id: clinicalInstructorId,
     scheduled_date: scheduledDate,
     end_date: endDate,
     inclusive_days: inclusiveDays,
