@@ -67,7 +67,7 @@ export default async function StudentDashboardPage() {
   const totalCompleted = caseLogs.length;
   const pendingUploads = uploads.filter((u) => u.status === "pending").length;
   const pendingAssignments = assignments.filter(
-    (a) => a.status === "assigned"
+    (a) => a.status === "scheduled"
   ).length;
 
   const overallPct =

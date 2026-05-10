@@ -128,7 +128,7 @@ export default async function CIStudentProfilePage({ params }: PageProps) {
           </div>
           <div className="rounded-lg bg-white/5 p-3">
             <p className="text-lg font-bold text-white">
-              {typedAssignments.filter((a) => a.status === "assigned").length}
+              {typedAssignments.filter((a) => a.status === "scheduled").length}
             </p>
             <p className="text-xs text-white/40">Open Assignments</p>
           </div>
