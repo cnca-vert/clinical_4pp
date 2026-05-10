@@ -130,26 +130,27 @@ export async function deleteStudentAccount(formData: FormData) {
 
   if (!profile || profile.is_active) return; // refuse to delete an active account
 
-  // Delete from Supabase Auth — this frees the email immediately
-  const { error } = await serviceClient.auth.admin.deleteUser(id);
-  if (error) {
-    console.error("[deleteStudentAccount] auth delete failed:", error.message);
-    return;
-  }
-
-  // Nullify the email on the profile so history row is preserved without the email being locked
-  // (profile may already be cascade-deleted depending on FK setup — upsert is safe either way)
+  // Nullify the profile email BEFORE deleting the auth user.
+  // The sync_role_to_app_metadata trigger fires on UPDATE — if the auth user
+  // is already gone when it runs, the trigger fails and rolls back the update.
   await serviceClient
     .from("profiles")
     .update({ email: null, is_active: false })
     .eq("id", id);
 
-  // Free the roster slot so the name can be re-used for a fresh signup
+  // Free the roster slot
   if (profile.email) {
     await serviceClient
       .from("student_roster")
       .update({ email: null })
       .eq("email", profile.email);
+  }
+
+  // Now safe to delete the auth user (trigger won't fire again)
+  const { error } = await serviceClient.auth.admin.deleteUser(id);
+  if (error) {
+    console.error("[deleteStudentAccount] auth delete failed:", error.message);
+    // Profile email is already nulled so it won't show in the roster
   }
 
   revalidatePath("/admin/roster");
