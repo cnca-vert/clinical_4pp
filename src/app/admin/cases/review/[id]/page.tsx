@@ -17,12 +17,13 @@ export default async function ReviewDetailPage({
     { data: caseTypes },
     { data: areasOfDuty },
     { data: rotations },
+    { data: clinicalInstructors },
   ] = await Promise.all([
     supabase
       .from("case_submissions")
       .select(
         `id, case_type_id, area_of_duty_id, rotation_id, upload_id,
-         date, notes, status, submitted_at,
+         date, notes, status, submitted_at, clinical_instructor_id,
          profiles!student_id(full_name, section),
          case_types(name),
          areas_of_duty(name)`
@@ -43,6 +44,12 @@ export default async function ReviewDetailPage({
       .from("rotations")
       .select("id, name")
       .order("start_date", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "ci")
+      .eq("is_active", true)
+      .order("full_name"),
   ]);
 
   if (!submissionRaw) notFound();
@@ -57,6 +64,7 @@ export default async function ReviewDetailPage({
     notes: string | null;
     status: string;
     submitted_at: string;
+    clinical_instructor_id: string | null;
     profiles: { full_name: string; section: string | null } | null;
     case_types: { name: string } | null;
     areas_of_duty: { name: string } | null;
@@ -134,10 +142,12 @@ export default async function ReviewDetailPage({
           upload_id: sub.upload_id,
           date: sub.date,
           notes: sub.notes,
+          clinical_instructor_id: sub.clinical_instructor_id,
         }}
         caseTypes={caseTypes ?? []}
         areasOfDuty={areasOfDuty ?? []}
         rotations={rotations ?? []}
+        clinicalInstructors={(clinicalInstructors ?? []) as { id: string; full_name: string }[]}
         upload={upload}
         signedUrl={signedUrl}
       />

@@ -16,6 +16,7 @@ export async function approveSubmission(formData: FormData) {
   const areaOfDutyId = formData.get("area_of_duty_id") as string;
   const rotationId = (formData.get("rotation_id") as string) || null;
   const uploadId = (formData.get("upload_id") as string) || null;
+  const clinicalInstructorId = (formData.get("clinical_instructor_id") as string) || null;
   const date = formData.get("date") as string;
   const notes = ((formData.get("notes") as string) ?? "").trim() || null;
 
@@ -40,6 +41,7 @@ export async function approveSubmission(formData: FormData) {
     area_of_duty_id: areaOfDutyId,
     rotation_id: rotationId,
     upload_id: uploadId,
+    clinical_instructor_id: clinicalInstructorId,
     date,
     notes,
     logged_by: user.id,

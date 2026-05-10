@@ -8,6 +8,7 @@ import SubmitButton from "@/components/ui/SubmitButton";
 type CaseType = { id: string; name: string };
 type AreaOfDuty = { id: string; name: string };
 type Rotation = { id: string; name: string };
+type ClinicalInstructor = { id: string; full_name: string };
 
 interface Submission {
   id: string;
@@ -17,6 +18,7 @@ interface Submission {
   upload_id: string | null;
   date: string;
   notes: string | null;
+  clinical_instructor_id: string | null;
 }
 
 interface Props {
@@ -24,6 +26,7 @@ interface Props {
   caseTypes: CaseType[];
   areasOfDuty: AreaOfDuty[];
   rotations: Rotation[];
+  clinicalInstructors: ClinicalInstructor[];
   upload: { id: string; file_name: string } | null;
   signedUrl: string | null;
 }
@@ -36,6 +39,7 @@ export default function ReviewForm({
   caseTypes,
   areasOfDuty,
   rotations,
+  clinicalInstructors,
   upload,
   signedUrl,
 }: Props) {
@@ -207,6 +211,25 @@ export default function ReviewForm({
                   <option value="">— No rotation —</option>
                   {rotations.map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Clinical Instructor */}
+            {clinicalInstructors.length > 0 && (
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-(--text-secondary)">
+                  Clinical Instructor (optional)
+                </label>
+                <select
+                  name="clinical_instructor_id"
+                  defaultValue={submission.clinical_instructor_id ?? ""}
+                  className="w-full rounded-lg border border-border bg-elevated px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">— Select instructor —</option>
+                  {clinicalInstructors.map((ci) => (
+                    <option key={ci.id} value={ci.id}>{ci.full_name}</option>
                   ))}
                 </select>
               </div>
