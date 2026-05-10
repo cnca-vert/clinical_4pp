@@ -14,12 +14,28 @@
 const { createClient } = require("@supabase/supabase-js");
 const { randomBytes } = require("crypto");
 
-// Load .env.local if present (Next.js style)
+// Load env file — tries .env.production.local first, then .env.local
 try {
-  const { config } = require("dotenv");
-  config({ path: ".env.local" });
+  const fs = require("fs");
+  const path = require("path");
+  const candidates = [".env.production.local", ".env.local"];
+  for (const candidate of candidates) {
+    const envPath = path.resolve(process.cwd(), candidate);
+    if (!fs.existsSync(envPath)) continue;
+    const lines = fs.readFileSync(envPath, "utf-8").split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const idx = trimmed.indexOf("=");
+      if (idx === -1) continue;
+      const key = trimmed.slice(0, idx).trim();
+      const val = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+      if (!(key in process.env)) process.env[key] = val;
+    }
+    break; // stop at first found
+  }
 } catch {
-  // dotenv not installed — rely on process.env being already set
+  // fall through — rely on process.env being already set
 }
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

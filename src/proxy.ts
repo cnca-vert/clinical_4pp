@@ -92,6 +92,23 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(url);
       }
     }
+
+    // Enforce is_active for students on protected routes
+    if (role === "student" && !isPublic) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_active")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.is_active === false) {
+        await supabase.auth.signOut();
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        url.searchParams.set("error", "account_inactive");
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return response;

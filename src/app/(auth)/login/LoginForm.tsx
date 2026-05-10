@@ -53,6 +53,16 @@ export default function LoginForm({
           <p className="text-xs text-red-400">Authentication failed. Please try again.</p>
         </div>
       )}
+      {error === "account_inactive" && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+          <p className="text-xs text-red-400">Your account has been deactivated. Please contact your administrator.</p>
+        </div>
+      )}
+      {error === "credentials_expired" && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <p className="text-xs text-amber-400">Your credentials have expired. Please contact your administrator.</p>
+        </div>
+      )}
       <div>
         <label
           htmlFor="email"
